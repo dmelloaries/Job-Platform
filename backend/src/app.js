@@ -11,6 +11,7 @@ const {
   } = require("./middlewares/authorization");
 
  const app = express();
+ 
 
 // app.use(
 //   cors({
@@ -22,6 +23,7 @@ const {
 // );
 
 app.use(express.json());
+
 app.get("/",(req,res)=>{
     res.json("server is alive");
 })

@@ -96,3 +96,36 @@ exports.getCompaniesApplied = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
+
+// Get applicant profile information
+exports.getApplicantProfile = async (req, res) => {
+  const applicantId = req.user.id;  // Get applicant's ID from the JWT token
+
+  try {
+    const applicantProfile = await prisma.applicant.findUnique({
+      where: {
+        id: applicantId,
+      },
+      select: {
+        name: true,
+        email: true,
+        bio: true,
+        skills: true,
+        resume: true,
+        resumeOriginalName: true,
+        profilePhoto: true,
+      },
+    });
+
+    if (!applicantProfile) {
+      return res.status(404).json({ message: 'Applicant profile not found' });
+    }
+
+    res.json(applicantProfile);
+  } catch (error) {
+    console.error("Error fetching applicant profile:", error.message || error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
