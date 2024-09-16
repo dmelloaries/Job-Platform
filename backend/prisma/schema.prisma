@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Recruiter {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  jobPosts  Job[]    @relation("RecruiterJobs")
+}
+
+model Applicant {
+  id          Int        @id @default(autoincrement())
+  name        String
+  email       String     @unique
+  password    String
+  resume      String?    // For AI Resume Review functionality
+  applications Application[] @relation("ApplicantApplications")
+}
+
+model Job {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String
+  location    String
+  recruiter   Recruiter  @relation(fields: [recruiterId], references: [id], name: "RecruiterJobs")
+  recruiterId Int
+  applicants  Application[] @relation("JobApplications")
+}
+
+model Application {
+  id         Int       @id @default(autoincrement())
+  status     String    // e.g., "Applied", "Shortlisted"
+  job        Job       @relation(fields: [jobId], references: [id], name: "JobApplications")
+  jobId      Int
+  applicant  Applicant @relation(fields: [applicantId], references: [id], name: "ApplicantApplications")
+  applicantId Int
+}
