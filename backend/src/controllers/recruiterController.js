@@ -32,7 +32,7 @@ exports.getApplicants = async (req, res) => {
 
   try {
     const applicants = await prisma.application.findMany({
-      where: { jobId: parseInt(jobId) },  // Ensure jobId is a number
+      where: { jobId: parseInt(jobId) }, 
       include: { applicant: true },  // Include associated applicant data
     });
 

@@ -1,5 +1,6 @@
 const prisma = require('../utils/prismaClient');
 
+// Get jobs with optional filtering by location and title
 exports.getJobs = async (req, res) => {
   const { location, title } = req.query;
 
@@ -17,10 +18,12 @@ exports.getJobs = async (req, res) => {
   }
 };
 
+// Apply for a job
 exports.applyForJob = async (req, res) => {
-  const { applicantId, jobId } = req.body;
+  const { jobId } = req.body;
 
   try {
+    const applicantId = req.user.id;  // Extract applicant ID from JWT token
     const application = await prisma.application.create({
       data: {
         applicantId,
@@ -31,6 +34,65 @@ exports.applyForJob = async (req, res) => {
     res.json(application);
   } catch (error) {
     console.error("Error applying for job:", error.message || error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Update applicant profile information
+exports.updateApplicantProfile = async (req, res) => {
+  const applicantId = req.user.id;  // Get applicant's ID from the JWT token
+  const { bio, skills, resume, resumeOriginalName, profilePhoto } = req.body;
+
+  try {
+    const updatedApplicant = await prisma.applicant.update({
+      where: {
+        id: applicantId,
+      },
+      data: {
+        bio: bio || undefined,  // Update bio if provided
+        skills: skills || undefined,  // Update skills array if provided
+        resume: resume || undefined,  // Update resume URL if provided
+        resumeOriginalName: resumeOriginalName || undefined,  // Update original resume filename if provided
+        profilePhoto: profilePhoto || undefined,  // Update profile photo URL if provided
+      },
+    });
+
+    res.json(updatedApplicant);
+  } catch (error) {
+    console.error("Error updating profile:", error.message || error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+// Get list of companies applied to by the applicant
+exports.getCompaniesApplied = async (req, res) => {
+  const applicantId = req.user.id;  // Get applicant's ID from the JWT token
+
+  try {
+    const applications = await prisma.application.findMany({
+      where: {
+        applicantId: applicantId,  // Get all applications by this applicant
+      },
+      include: {
+        job: {
+          include: {
+            recruiter: true,  // Include the recruiter (company) information
+          },
+        },
+      },
+    });
+
+    // Map over applications to return only the relevant company information
+    const companiesApplied = applications.map(application => ({
+      companyName: application.job.recruiter.name,
+      jobTitle: application.job.title,
+      status: application.status,
+    }));
+
+    res.json(companiesApplied);
+  } catch (error) {
+    console.error("Error fetching companies applied to:", error.message || error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

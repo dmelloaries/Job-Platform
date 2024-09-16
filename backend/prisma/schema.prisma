@@ -22,12 +22,18 @@ model Recruiter {
 }
 
 model Applicant {
-  id          Int        @id @default(autoincrement())
-  name        String
-  email       String     @unique
-  password    String
-  resume      String?    // For AI Resume Review functionality
-  applications Application[] @relation("ApplicantApplications")
+  id            Int          @id @default(autoincrement())
+  name          String
+  email         String       @unique
+  password      String
+  resume        String?      // For AI Resume Review functionality (URL to the resume file)
+  resumeOriginalName String? // Original resume filename
+  bio           String?      // Bio of the applicant
+  skills        String[]     // Array of skills (PostgreSQL supports array types)
+  profilePhoto  String?      // Profile photo URL
+  applications  Application[] @relation("ApplicantApplications")
+  companyId     Int?         // Foreign key to a company if applicable
+  company       Company?     @relation(fields: [companyId], references: [id]) // Reference to Company model
 }
 
 model Job {
@@ -41,10 +47,16 @@ model Job {
 }
 
 model Application {
-  id         Int       @id @default(autoincrement())
-  status     String    // e.g., "Applied", "Shortlisted"
-  job        Job       @relation(fields: [jobId], references: [id], name: "JobApplications")
-  jobId      Int
-  applicant  Applicant @relation(fields: [applicantId], references: [id], name: "ApplicantApplications")
+  id          Int       @id @default(autoincrement())
+  status      String    // e.g., "Applied", "Shortlisted"
+  job         Job       @relation(fields: [jobId], references: [id], name: "JobApplications")
+  jobId       Int
+  applicant   Applicant  @relation(fields: [applicantId], references: [id], name: "ApplicantApplications")
   applicantId Int
+}
+
+model Company {
+  id         Int        @id @default(autoincrement())
+  name       String
+  applicants Applicant[] // One-to-many relation with Applicants
 }
