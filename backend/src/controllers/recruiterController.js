@@ -89,7 +89,7 @@ exports.getApplicants = async (req, res) => {
 
     res.json({
       job: jobInfo,
-      applicants: formattedApplicants,
+      applicants: formattedApplicants, // Send the job and applicants data
     });
   } catch (error) {
     console.error("Error retrieving applicants:", error.message || error);
