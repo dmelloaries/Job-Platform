@@ -11,6 +11,19 @@ exports.getJobs = async (req, res) => {
         location: { contains: location || "" },
         title: { contains: title || "" },
       },
+      select: {
+        id: true,
+        companyname: true,  // Include the company name
+        title: true,
+        description: true,
+        location: true,
+        salary: true,  // Include the salary
+        recruiter: {
+          select: {
+            name: true,  // Include recruiter name (if needed)
+          },
+        },
+      },
     });
     res.json(jobs);
   } catch (error) {
@@ -25,6 +38,40 @@ exports.applyForJob = async (req, res) => {
 
   try {
     const applicantId = req.user.id;  // Extract applicant ID from JWT token
+
+    // Check if the applicant exists in the database
+    const applicant = await prisma.applicant.findUnique({
+      where: { id: applicantId },
+    });
+
+    if (!applicant) {
+      return res.status(404).json({ message: "Applicant not found." });
+    }
+
+    // Check if the job exists in the database
+    const job = await prisma.job.findUnique({
+      where: { id: jobId },
+    });
+
+    if (!job) {
+      return res.status(404).json({ message: "Job not found." });
+    }
+
+    // Check if the applicant has already applied for the job
+    const existingApplication = await prisma.application.findUnique({
+      where: {
+        applicantId_jobId: {  // Ensure this composite unique index exists in your Prisma schema
+          applicantId,
+          jobId,
+        },
+      },
+    });
+
+    if (existingApplication) {
+      return res.status(400).json({ message: "You have already applied for this job." });
+    }
+
+    // Create new application
     const application = await prisma.application.create({
       data: {
         applicantId,
@@ -32,12 +79,14 @@ exports.applyForJob = async (req, res) => {
         status: 'Applied',
       },
     });
+
     res.json(application);
   } catch (error) {
     console.error("Error applying for job:", error.message || error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 // Update applicant profile information
 exports.updateApplicantProfile = async (req, res) => {
@@ -65,7 +114,6 @@ exports.updateApplicantProfile = async (req, res) => {
   }
 };
 
-
 // Get list of companies applied to by the applicant
 exports.getCompaniesApplied = async (req, res) => {
   const applicantId = req.user.id;  // Get applicant's ID from the JWT token
@@ -84,10 +132,11 @@ exports.getCompaniesApplied = async (req, res) => {
       },
     });
 
-    // Map over applications to return only the relevant company information
+    // Map over applications to return relevant company information, including company name from the `job`
     const companiesApplied = applications.map(application => ({
-      companyName: application.job.recruiter.name,
+      companyName: application.job.companyname,  // Fetch company name from Job model
       jobTitle: application.job.title,
+      salary: application.job.salary,  // Include the salary information
       status: application.status,
     }));
 
@@ -97,8 +146,6 @@ exports.getCompaniesApplied = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
 
 // Get applicant profile information
 exports.getApplicantProfile = async (req, res) => {
@@ -131,10 +178,10 @@ exports.getApplicantProfile = async (req, res) => {
   }
 };
 
+// Parse resume for the applicant
 exports.parseResume = async (req, res) => {
   try {
     const applicantId = req.user.id;  
-    
     
     const applicant = await prisma.applicant.findUnique({
       where: { id: applicantId },
@@ -145,7 +192,6 @@ exports.parseResume = async (req, res) => {
       return res.status(404).json({ error: 'Applicant or resume not found' });
     }
 
-   
     const result = await ParseResumeDistributed(applicant.resume);
 
     res.json(result);
