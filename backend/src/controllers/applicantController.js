@@ -193,7 +193,7 @@ exports.parseResume = async (req, res) => {
     }
 
     const result = await ParseResumeDistributed(applicant.resume);
-
+    console.log('Parsed resume:', result);
     res.json(result);
   } catch (error) {
     console.error('Error parsing resume:', error);

@@ -18,7 +18,8 @@ const {
   ];
   
   let currentGenAIIndex = 0;
-  
+  // Create a function to get the next available AI instance
+
   function getNextGenAI() {
     const genAI = genAIInstances[currentGenAIIndex];
     currentGenAIIndex = (currentGenAIIndex + 1) % genAIInstances.length;
@@ -31,7 +32,7 @@ const {
   }
 
 
-
+// Distribute the resume parsing task across multiple AI instances
 async function ParseResumeDistributed(
     resume_url,
     maxretries = 3

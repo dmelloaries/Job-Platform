@@ -39,7 +39,7 @@ const ConvertLink = require('./convertLink.js');
       writer.on('error', reject);
     });
   }
-  
+  // Parse the resume using the generative AI model
   
   module.exports =  async function ParseResume(resume_url,genAI) {
     const systemInstruction = "Review the Resume and suggest improvements .\nExpected json output:\n{\n \  \"domain\": \"\",\n   \"experience_years\": ,\n   \"Review\": ,\n  \"location\": \"\",\n  \"skills\": [\"skill1\", \"skill2\", \"skill3],\n  \"education\": \"\",\n  \"salary\": \"salary range here in INR\"\n}\n"
