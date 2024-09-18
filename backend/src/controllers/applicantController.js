@@ -1,4 +1,5 @@
 const prisma = require('../utils/prismaClient');
+const { ParseResumeDistributed } = require('../ai/distributor.js');
 
 // Get jobs with optional filtering by location and title
 exports.getJobs = async (req, res) => {
@@ -94,5 +95,62 @@ exports.getCompaniesApplied = async (req, res) => {
   } catch (error) {
     console.error("Error fetching companies applied to:", error.message || error);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+
+// Get applicant profile information
+exports.getApplicantProfile = async (req, res) => {
+  const applicantId = req.user.id;  
+
+  try {
+    const applicantProfile = await prisma.applicant.findUnique({
+      where: {
+        id: applicantId,
+      },
+      select: {
+        name: true,
+        email: true,
+        bio: true,
+        skills: true,
+        resume: true,
+        resumeOriginalName: true,
+        profilePhoto: true,
+      },
+    });
+
+    if (!applicantProfile) {
+      return res.status(404).json({ message: 'Applicant profile not found' });
+    }
+
+    res.json(applicantProfile);
+  } catch (error) {
+    console.error("Error fetching applicant profile:", error.message || error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+exports.parseResume = async (req, res) => {
+  try {
+    const applicantId = req.user.id;  
+    
+    
+    const applicant = await prisma.applicant.findUnique({
+      where: { id: applicantId },
+      select: { resume: true }
+    });
+
+    if (!applicant || !applicant.resume) {
+      return res.status(404).json({ error: 'Applicant or resume not found' });
+    }
+
+   
+    const result = await ParseResumeDistributed(applicant.resume);
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error parsing resume:', error);
+    res.status(500).json({ error: 'Failed to parse resume' });
   }
 };
