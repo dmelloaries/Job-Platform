@@ -31,13 +31,11 @@ exports.login = async (req, res) => {
     if (!validPassword) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-
-    // Generated a JWT token with user ID and role
     const token = jwt.sign(
       { userId: user.id, role: userType },
       process.env.JWT_SECRET,
       {
-        expiresIn: "1h",
+        expiresIn: '7d', 
       }
     );
 
