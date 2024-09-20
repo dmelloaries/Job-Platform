@@ -44,48 +44,13 @@ const safetySettings = [
   
   
   module.exports =  async function ScoreCandidates(resume_url,job_requirement,genAI) {
-    const systemInstruction = `Parse the following resume and extract key information into a JSON format.Include the following details:\n\n\n1. Personal Information: name, contact number, email, and location\n2. Work Experience: For each position, provide company name, candidate's role, and work duration\n3. Projects: List significant projects undertaken\n4. Education:\n   - Highest degree attained\n   - Field of study\n   - University/institution names\n   - Graduation dates\n   - GPA (if provided)\n5. Skills:\n   - Technical skills\n   - Soft skills\n   - Language proficiencies\n6. Certifications and Achievements:\n   - Awards and hackathons\n   - Professional certifications\n7. Tools and Technologies:\n   - Software proficiency\n   - Programming languages\n8. Social Links: LinkedIn, GitHub, portfolio\n9. Gaps in Employment:    Identify any significant gaps\n\n \n If any those doesn't exists give null \n After extracting this information, compare the candidate's profile to the following job requirement given \nBased on the comparison, rate the candidate's suitability for the role on a scale of 1 to 100 and state reason for the rating which will include candidates strong , weak point where he lacks ,etc . Include this rating and reason in the JSON output.\n\nProvide the extracted information and suitability rating in a single, well-structured JSON format.  {
+    const systemInstruction = `Parse the following resume and extract key information into a JSON format.Include the following details:\n\n\n1. Personal Information: name, contact number, email, and location\n If any those doesn't exists give null \n After extracting this information, compare the candidate's profile to the following job requirement given \nBased on the comparison, rate the candidate's suitability for the role on a scale of 1 to 100 and state reason for the rating which will include candidates strong , weak point where he lacks ,etc . Include this rating and reason in the JSON output.\n\nProvide the extracted information and suitability rating in a single, well-structured JSON format.  {
   "personal_information": {
     "name": "",
     "contact_number": "",
     "email": "",
     "location": ""
   },
-  "work_experience": [
-    {
-      "company": "",
-      "role": "",
-      "duration": ""
-    }
-  ],
-  "projects": [
-    {
-      "title": "",
-      "description": ""
-    }
-  ],
-  "education": [
-    {
-      "degree": "",
-      "field_of_study": "",
-      "university": "",
-      "graduation_date": "",
-      "gpa": null
-    }
-  ],
-  "skills": {
-    "technical_skills": [],
-    "soft_skills": [],
-    "language_proficiencies": []
-  },
-  "certifications_and_achievements": [],
-  "tools_and_technologies": [],
-  "social_links": {
-    "linkedin": "",
-    "github": "",
-    "portfolio": null
-  },
-  "gaps_in_employment": [],
   "suitability_rating": null,
   "reason": ""
 }`
