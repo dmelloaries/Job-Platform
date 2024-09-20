@@ -3,6 +3,7 @@ const express = require("express");
 const authRoutes = require("./routes/authRoutes");
 const applicantRoutes = require("./routes/applicantRoutes");
 const recruiterRoutes = require("./routes/recruiterRoutes");
+const { setupChatWebSocket } = require("./controllers/chatController");
 
 const {
     authenticateToken,

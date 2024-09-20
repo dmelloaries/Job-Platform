@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="messages"></div>
+    <form>
+        <input type="text" placeholder="Your message..." required>
+        <button type="submit">Send</button>
+    </form>
+    <script>
+        function showMessage(text, isMine = false) {
+            document.getElementById("messages").innerHTML += `
+                <div class="message-row ${isMine ? 'mine' : 'theirs'}">
+                    <div class="bubble">${text}</div>
+                </div>
+            `;
+        }
+
+        const ws = new WebSocket('ws://localhost:3000'); // Update to the correct server URL
+
+        ws.addEventListener('message', ev => {
+            const reader = new FileReader();
+            
+            reader.onload = () => {
+                showMessage(reader.result);  // Use the result of the FileReader
+            };
+
+            if (ev.data instanceof Blob) {
+                reader.readAsText(ev.data); // Read the Blob as text
+            } else {
+                showMessage(ev.data); // Handle as normal text
+            }
+        });
+
+        document.querySelector('form').onsubmit = ev => {
+            ev.preventDefault();
+            const input = document.querySelector('input');
+            ws.send(input.value);
+            showMessage(input.value, true);
+            input.value = '';
+        }
+    </script>
+</body>
+</html>
