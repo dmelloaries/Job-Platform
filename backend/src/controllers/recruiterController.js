@@ -1,19 +1,22 @@
 const prisma = require("../utils/prismaClient");
 const jwt = require("jsonwebtoken");
 const ScoreCandidatesDistributed = require("../ai/filtering/FilterDistributor.js");
+
 // Create a job, with recruiterId fetched from the authenticated user
 exports.createJob = async (req, res) => {
-  const { title, description, location } = req.body;
+  const { companyname, title, description, location, salary } = req.body; // Destructure companyname from req.body
 
   try {
     const recruiterId = req.user.id; // Use recruiter ID from JWT token
 
     const job = await prisma.job.create({
       data: {
+        companyname,  // Ensure companyname is passed here
         title,
         description,
         location,
-        recruiterId, // Retrieved from JWT token
+        salary,
+        recruiterId,  // Retrieved from JWT token
       },
     });
 
@@ -23,6 +26,7 @@ exports.createJob = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 // Get jobs list created by the recruiter
 exports.getJobs = async (req, res) => {
