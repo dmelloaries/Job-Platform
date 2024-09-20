@@ -38,9 +38,11 @@ model Applicant {
 
 model Job {
   id          Int        @id @default(autoincrement())
+  companyname String     @default("Unknown") // Adding a default value
   title       String
   description String
   location    String
+  salary      Int        @default(0)         // Adding a default value
   recruiter   Recruiter  @relation(fields: [recruiterId], references: [id], name: "RecruiterJobs")
   recruiterId Int
   applicants  Application[] @relation("JobApplications")
@@ -53,7 +55,10 @@ model Application {
   jobId       Int
   applicant   Applicant  @relation(fields: [applicantId], references: [id], name: "ApplicantApplications")
   applicantId Int
+
+  @@unique([applicantId, jobId])  // Ensures a unique application for each job by each applicant
 }
+
 
 model Company {
   id         Int        @id @default(autoincrement())
