@@ -5,7 +5,6 @@ const {
     HarmBlockThreshold,
   } = require("@google/generative-ai");
   const ScoreCandidates = require("./scorecandids.js");
-  console.log(process.env.API_KEY_1);
   const genAIInstances = [
     new GoogleGenerativeAI(process.env.API_KEY_1),
     // new GoogleGenerativeAI(process.env.API_KEY_2),

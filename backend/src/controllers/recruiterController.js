@@ -1,6 +1,10 @@
 const prisma = require("../utils/prismaClient");
 const jwt = require("jsonwebtoken");
 const ScoreCandidatesDistributed = require("../ai/filtering/FilterDistributor.js");
+const percentageFilter = require("../ai/filtering/percentageFilter.js");
+const getAccessToken = require("../ai/scheduling/getToken.js");
+const { bulkScheduleMeetings } = require("../ai/scheduling/calendly.js");
+const ensureEventType = require("../ai/scheduling/CheckCreateEvent.js");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
@@ -95,6 +99,17 @@ exports.getApplicants = async (req, res) => {
       profilePhoto: applicant.applicant.profilePhoto,
     }));
 
+    const result = await Promise.all(
+      formattedApplicants.map(async (applicant) => {
+        const resume_url = applicant.resume;
+        const job_requirement = jobInfo.description;
+        const score = await ScoreCandidatesDistributed(
+          resume_url,
+          job_requirement
+        );
+        return score;
+      })
+    );
     res.json({
       job: jobInfo,
       applicants: formattedApplicants,
@@ -106,7 +121,7 @@ exports.getApplicants = async (req, res) => {
 };
 
 exports.getFilteredApplicants = async (req, res) => {
-  const { jobId } = req.body;
+  const { jobId, percentage } = req.body;
 
   // Validate jobId
   if (!jobId) {
@@ -124,7 +139,9 @@ exports.getFilteredApplicants = async (req, res) => {
     });
     console.log("1111111111");
     if (applicants.length === 0) {
-      return res.status(404).json({ message: "No applicants found for this job." });
+      return res
+        .status(404)
+        .json({ message: "No applicants found for this job." });
     }
     console.log("1111111111");
     // Structured the response
@@ -132,6 +149,8 @@ exports.getFilteredApplicants = async (req, res) => {
       title: applicants[0].job.title,
       description: applicants[0].job.description,
     };
+
+    const formattedApplicants = applicants.map((applicant) => ({
     console.log("1111111111");
     const formattedApplicants = applicants.map(applicant => ({
       id: applicant.applicant.id,
@@ -143,23 +162,32 @@ exports.getFilteredApplicants = async (req, res) => {
       skills: applicant.applicant.skills,
       profilePhoto: applicant.applicant.profilePhoto,
     }));
+    // const percentage = 50;
+
     console.log("1111111111");
     const result = await Promise.all(
-      formattedApplicants.map(async applicant => {
+      formattedApplicants.map(async (applicant) => {
         const resume_url = applicant.resume;
         const job_requirement = jobInfo.description;
-        const score = await ScoreCandidatesDistributed(resume_url, job_requirement);
+        const score = await ScoreCandidatesDistributed(
+          resume_url,
+          job_requirement
+        );
         //inserting applicant id in the score object
         score.applicantId = applicant.id;
         return score;
       })
     );
+
+    const filteredApplicants = await percentageFilter(result, percentage);
+
     console.log("1111111111");
     if (result) {
       res.json({
         job: jobInfo,
-        applicants: formattedApplicants, // Send the job and applicants data
+        applicants: formattedApplicants,
         result: result,
+        filteredApplicants: filteredApplicants,
       });
     }
   } catch (error) {
@@ -167,6 +195,34 @@ exports.getFilteredApplicants = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+exports.getScoredCandidates = async (req, res) => {
+  //get authCode from params
+  const authCode = req.query.authCode;
+  console.log("authCode:", authCode);
+  //example url params
+  const CandidateEmail = req.body.candidate;
+  console.log("CandidateEmail:", CandidateEmail);
+  // const authCode = "z1GV8zlVRfUOu1q1EM31HjisnlLRphegdL-Q3fQ-FuA"
+  const recruiterAccessToken = await getAccessToken(authCode);
+  let eventUri;
+  const eventTypeName = "30 Minute Meeting"; // Name of the event type to check/create
+  if (recruiterAccessToken) {
+    ensureEventType(recruiterAccessToken, eventTypeName)
+      .then((eventTypeUri) => {
+        eventUri = eventTypeUri;
+        console.log("Final Event Type URI:", eventTypeUri);
+        const ConfirmMessage = bulkScheduleMeetings(
+          recruiterAccessToken,
+          eventUri,
+          CandidateEmail
+        );
+        console.log("recruiterAccessToken:", recruiterAccessToken);
+        res.json(ConfirmMessage);
+      })
+      .catch((error) => {
+         
+        console.error("Failed to ensure event type:", error);
+      });
 
 
 
