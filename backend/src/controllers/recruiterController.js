@@ -150,9 +150,9 @@ exports.getFilteredApplicants = async (req, res) => {
       description: applicants[0].job.description,
     };
 
-    const formattedApplicants = applicants.map((applicant) => ({
-    console.log("1111111111");
-    const formattedApplicants = applicants.map(applicant => ({
+    const formattedApplicants = applicants
+    .filter((applicant) => applicant.applicant.resume !== 'https://example.com/uploads/resume.pdf') // Filter out applicants with the specific resume URL
+    .map((applicant) => ({
       id: applicant.applicant.id,
       name: applicant.applicant.name,
       email: applicant.applicant.email,
@@ -162,6 +162,7 @@ exports.getFilteredApplicants = async (req, res) => {
       skills: applicant.applicant.skills,
       profilePhoto: applicant.applicant.profilePhoto,
     }));
+  
     // const percentage = 50;
 
     console.log("1111111111");
@@ -194,36 +195,7 @@ exports.getFilteredApplicants = async (req, res) => {
     console.error("Error retrieving applicants:", error.message || error);
     res.status(500).json({ message: "Internal server error" });
   }
-};
-exports.getScoredCandidates = async (req, res) => {
-  //get authCode from params
-  const authCode = req.query.authCode;
-  console.log("authCode:", authCode);
-  //example url params
-  const CandidateEmail = req.body.candidate;
-  console.log("CandidateEmail:", CandidateEmail);
-  // const authCode = "z1GV8zlVRfUOu1q1EM31HjisnlLRphegdL-Q3fQ-FuA"
-  const recruiterAccessToken = await getAccessToken(authCode);
-  let eventUri;
-  const eventTypeName = "30 Minute Meeting"; // Name of the event type to check/create
-  if (recruiterAccessToken) {
-    ensureEventType(recruiterAccessToken, eventTypeName)
-      .then((eventTypeUri) => {
-        eventUri = eventTypeUri;
-        console.log("Final Event Type URI:", eventTypeUri);
-        const ConfirmMessage = bulkScheduleMeetings(
-          recruiterAccessToken,
-          eventUri,
-          CandidateEmail
-        );
-        console.log("recruiterAccessToken:", recruiterAccessToken);
-        res.json(ConfirmMessage);
-      })
-      .catch((error) => {
-         
-        console.error("Failed to ensure event type:", error);
-      });
-
+}
 
 
 
@@ -253,7 +225,7 @@ exports.messageApplicant = async (req, res) => {
         pass: process.env.EMAIL_PASS, // your Gmail password or App Password
       },
       logger: true, // Log to console
-      debug: true, // Show SMTP traffic
+      debug: true, // Show SMTP traffic 
     });
 
     const mailOptions = {

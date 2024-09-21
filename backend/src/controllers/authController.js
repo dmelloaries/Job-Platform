@@ -15,7 +15,7 @@ exports.login = async (req, res) => {
 
     // If not found in Applicant table, try the Recruiter table
     if (!user) {
-      user = await prisma.recruiter.findUnique({
+      user = await prisma.recruiter.findUnique({ 
         where: { email },
       });
       userType = "Recruiter";
