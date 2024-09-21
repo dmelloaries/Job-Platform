@@ -173,9 +173,6 @@ exports.getFilteredApplicants = async (req, res) => {
 
 //Your messageApplicant function
 exports.messageApplicant = async (req, res) => {
-  console.log("Email User:", process.env.EMAIL_USER);
-  console.log("Email Pass:", process.env.EMAIL_PASS);
-
   const { email, messageContent } = req.body;
 
   if (!email || !messageContent) {
@@ -191,13 +188,13 @@ exports.messageApplicant = async (req, res) => {
 
   try {
     const transporter = nodemailer.createTransport({
-      service: "gmail", // Use 'gmail' for Gmail service
+      service: "gmail",
       auth: {
-        user: process.env.EMAIL_USER, // your Gmail address
-        pass: process.env.EMAIL_PASS, // your Gmail password or App Password
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
-      logger: true, // Log to console
-      debug: true, // Show SMTP traffic
+      logger: true,
+      debug: true,
     });
 
     const mailOptions = {
@@ -217,7 +214,7 @@ exports.messageApplicant = async (req, res) => {
       res.status(500).json({ message: "Failed to send the message." });
     }
   } catch (error) {
-    console.error("Error messaging applicant:", error);
+    console.error("Error messaging applicant:", error.message); // Log specific error message
     res
       .status(500)
       .json({ message: "Internal server error", error: error.message });
