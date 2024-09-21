@@ -5,6 +5,8 @@ const percentageFilter = require("../ai/filtering/percentageFilter.js");
 const getAccessToken = require("../ai/scheduling/getToken.js");
 const { bulkScheduleMeetings } = require("../ai/scheduling/calendly.js");
 const ensureEventType = require("../ai/scheduling/CheckCreateEvent.js");
+const { google } = require('googleapis'); 
+const OAuth2 = google.auth.OAuth2;
 
 // Create a job, with recruiterId fetched from the authenticated user
 exports.createJob = async (req, res) => {
@@ -108,6 +110,7 @@ exports.getApplicants = async (req, res) => {
         return score;
       })
     );
+    res.json({ job: jobInfo, applicants: formattedApplicants, result });
   } catch (error) {
     console.error("Error retrieving applicants:", error.message || error);
     res.status(500).json({ message: "Internal server error" });
@@ -115,7 +118,7 @@ exports.getApplicants = async (req, res) => {
 };
 exports.getFilteredApplicants = async (req, res) => {
   const { jobId, percentage } = req.body;
-
+   
   // Validate jobId
   if (!jobId) {
     return res.status(400).json({ message: "Job ID is required." });
@@ -129,7 +132,7 @@ exports.getFilteredApplicants = async (req, res) => {
         applicant: true, // Include associated applicant data
       },
     });
-
+      // console.log("applicants",applicants)
     if (applicants.length === 0) {
       return res
         .status(404)
@@ -142,16 +145,22 @@ exports.getFilteredApplicants = async (req, res) => {
       description: applicants[0].job.description,
     };
 
-    const formattedApplicants = applicants.map((applicant) => ({
-      id: applicant.applicant.id,
-      name: applicant.applicant.name,
-      email: applicant.applicant.email,
-      resume: applicant.applicant.resume,
-      resumeOriginalName: applicant.applicant.resumeOriginalName,
-      bio: applicant.applicant.bio,
-      skills: applicant.applicant.skills,
-      profilePhoto: applicant.applicant.profilePhoto,
-    }));
+    const formattedApplicants = applicants
+  .filter((applicant) => applicant.applicant.resume !== 'https://example.com/uploads/resume.pdf') // Filter out applicants with the specific resume URL
+  .map((applicant) => ({
+    id: applicant.applicant.id,
+    name: applicant.applicant.name,
+    email: applicant.applicant.email,
+    resume: applicant.applicant.resume,
+    resumeOriginalName: applicant.applicant.resumeOriginalName,
+    bio: applicant.applicant.bio,
+    skills: applicant.applicant.skills,
+    profilePhoto: applicant.applicant.profilePhoto,
+  }));
+
+
+    console.log(formattedApplicants);
+    
     // const percentage = 50;
 
     const result = await Promise.all(
@@ -183,33 +192,58 @@ exports.getFilteredApplicants = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-exports.getScoredCandidates = async (req, res) => {
-  //get authCode from params
-  const authCode = req.query.authCode;
-  console.log("authCode:", authCode);
-  //example url params
-  const CandidateEmail = req.body.candidate;
-  console.log("CandidateEmail:", CandidateEmail);
-  // const authCode = "z1GV8zlVRfUOu1q1EM31HjisnlLRphegdL-Q3fQ-FuA"
-  const recruiterAccessToken = await getAccessToken(authCode);
-  let eventUri;
-  const eventTypeName = "30 Minute Meeting"; // Name of the event type to check/create
-  if (recruiterAccessToken) {
-    ensureEventType(recruiterAccessToken, eventTypeName)
-      .then((eventTypeUri) => {
-        eventUri = eventTypeUri;
-        console.log("Final Event Type URI:", eventTypeUri);
-        const ConfirmMessage = bulkScheduleMeetings(
-          recruiterAccessToken,
-          eventUri,
-          CandidateEmail
-        );
-        console.log("recruiterAccessToken:", recruiterAccessToken);
-        res.json(ConfirmMessage);
-      })
-      .catch((error) => {
+// exports.getScoredCandidates = async (req, res) => {
+//   //get authCode from params
+//   //example url params
+//   const CandidateEmail = req.body.candidate;
+//   console.log("CandidateEmail:", CandidateEmail);
+//   // const authCode = "z1GV8zlVRfUOu1q1EM31HjisnlLRphegdL-Q3fQ-FuA"
+//   let eventUri;
+//   const eventTypeName = "30 Minute Meeting"; // Name of the event type to check/create
+//   if (recruiterAccessToken) {
+//     ensureEventType(recruiterAccessToken, eventTypeName)
+//       .then((eventTypeUri) => {
+//         eventUri = eventTypeUri;
+//         console.log("Final Event Type URI:", eventTypeUri);
+//         const ConfirmMessage = bulkScheduleMeetings(
+//           recruiterAccessToken,
+//           eventUri,
+//           CandidateEmail
+//         );
+//         console.log("recruiterAccessToken:", recruiterAccessToken);
+//         res.json(ConfirmMessage);
+//       })
+//       .catch((error) => {
          
-        console.error("Failed to ensure event type:", error);
-      });
-  }
-};
+//         console.error("Failed to ensure event type:", error);
+//       });
+//   }
+// };
+
+const oauth2Client = new OAuth2(
+  '665488303177-057lra11leog8gnbati275ej7p6afdf4.apps.googleusercontent.com',     // Your OAuth 2.0 client ID
+  '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', // Your OAuth 2.0 client secret
+  'https://localhost:5173/oauth/callback'   // Redirect URI specified in the Google Cloud Console
+);
+
+
+exports.authGoogle = async (req, res) => {
+  const authorizeUrl = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: ['https://www.googleapis.com/auth/calendar'],
+  });
+  res.json(authorizeUrl);
+}
+exports.authGoogleCode = async (req, res) => {
+  const code = req.query.code;
+  const { tokens } = await oauth2Client.getToken(code);
+  oauth2Client.setCredentials(tokens);
+  res.json(tokens);
+}
+exports.scheduleMeeting = async (req, res) => {
+  const code = req.query.code;
+  const { tokens } = await oauth2Client.getToken(code);
+  oauth2Client.setCredentials(tokens);
+  res.json(tokens);
+}
+  
