@@ -133,16 +133,22 @@ exports.getFilteredApplicants = async (req, res) => {
       description: applicants[0].job.description,
     };
     console.log("1111111111");
-    const formattedApplicants = applicants.map(applicant => ({
-      id: applicant.applicant.id,
-      name: applicant.applicant.name,
-      email: applicant.applicant.email,
-      resume: applicant.applicant.resume,
-      resumeOriginalName: applicant.applicant.resumeOriginalName,
-      bio: applicant.applicant.bio,
-      skills: applicant.applicant.skills,
-      profilePhoto: applicant.applicant.profilePhoto,
-    }));
+    const formattedApplicants = applicants
+      .filter(
+        (applicant) =>
+          applicant.applicant.resume !==
+          "https://example.com/uploads/resume.pdf"
+      ) // Filter out applicants with the specific resume URL
+      .map((applicant) => ({
+        id: applicant.applicant.id,
+        name: applicant.applicant.name,
+        email: applicant.applicant.email,
+        resume: applicant.applicant.resume,
+        resumeOriginalName: applicant.applicant.resumeOriginalName,
+        bio: applicant.applicant.bio,
+        skills: applicant.applicant.skills,
+        profilePhoto: applicant.applicant.profilePhoto,
+      }));
     console.log("1111111111");
     const result = await Promise.all(
       formattedApplicants.map(async applicant => {
