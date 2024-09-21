@@ -32,6 +32,41 @@ exports.getJobs = async (req, res) => {
   }
 };
 
+
+// Get jobs with optional filtering by location, salary, and title
+exports.filterJobs = async (req, res) => {
+  const { location, salary, title } = req.body;
+
+  try {
+    const jobs = await prisma.job.findMany({
+      where: {
+        location: { contains: location || "" },
+        salary: salary ? { gte: Number(salary) } : undefined, // Filter for jobs with salary greater than or equal to the requested salary
+        title: { contains: title || "" },
+      },
+      select: {
+        id: true,
+        companyname: true,
+        title: true,
+        description: true,
+        location: true,
+        salary: true,
+        recruiter: {
+          select: {
+            name: true,  // Include recruiter name
+          },
+        },
+      },
+    });
+
+    res.json(jobs);
+  } catch (error) {
+    console.error("Error fetching jobs:", error.message || error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 // Apply for a job
 exports.applyForJob = async (req, res) => {
   const { jobId } = req.body;

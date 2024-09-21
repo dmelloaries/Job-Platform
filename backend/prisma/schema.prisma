@@ -50,7 +50,7 @@ model Job {
 
 model Application {
   id          Int       @id @default(autoincrement())
-  status      String    // e.g., "Applied", "Shortlisted"
+  status      String    // e.g., "Applied", "Shortlisted","rejected"
   job         Job       @relation(fields: [jobId], references: [id], name: "JobApplications")
   jobId       Int
   applicant   Applicant  @relation(fields: [applicantId], references: [id], name: "ApplicantApplications")
