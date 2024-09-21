@@ -61,6 +61,7 @@ exports.getJobs = async (req, res) => {
 // Get applicants for a specific job
 exports.getApplicants = async (req, res) => {
   const { jobId } = req.body;
+  const { jobId } = req.body;
 
   // Validate jobId
   if (!jobId) {
@@ -73,6 +74,8 @@ exports.getApplicants = async (req, res) => {
       include: {
         job: { select: { title: true, description: true } }, // Include job title and description
         applicant: true, // Include associated applicant data
+        job: { select: { title: true, description: true } }, // Include job title and description
+        applicant: true, // Include associated applicant data
       },
     });
 
@@ -82,6 +85,7 @@ exports.getApplicants = async (req, res) => {
         .json({ message: "No applicants found for this job." });
     }
 
+    // Structured the response
     // Structured the response
     const jobInfo = {
       title: applicants[0].job.title,
@@ -138,6 +142,7 @@ exports.getFilteredApplicants = async (req, res) => {
         .status(404)
         .json({ message: "No applicants found for this job." });
     }
+
 
     // Structured the response
     const jobInfo = {

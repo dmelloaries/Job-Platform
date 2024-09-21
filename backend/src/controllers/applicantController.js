@@ -99,20 +99,18 @@ exports.updateApplicantProfile = async (req, res) => {
         id: applicantId,
       },
       data: {
-        bio: bio || undefined, // Update bio if provided
-        skills: skills || undefined, // Update skills array if provided
-        resume: resume || undefined, // Update resume URL if provided
-        resumeOriginalName: resumeOriginalName || undefined, // Update original resume filename if provided
-        profilePhoto: profilePhoto || undefined, // Update profile photo URL if provided
+        bio: bio || undefined,  // Update bio if provided
+        skills: skills || undefined,  // Update skills array if provided
+        resume: resume || undefined,  // Update resume URL if provided
+        resumeOriginalName: resumeOriginalName || undefined,  // Update original resume filename if provided
+        profilePhoto: profilePhoto || undefined,  // Update profile photo URL if provided
       },
     });
 
-    return res.status(200).json({
-      message: "Profile updated successfully.",
-      success: true,
-    });
+    res.json(updatedApplicant);
   } catch (error) {
-    console.log(error);
+    console.error("Error updating profile:", error.message || error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
