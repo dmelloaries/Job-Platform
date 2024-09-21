@@ -61,7 +61,6 @@ exports.getJobs = async (req, res) => {
 // Get applicants for a specific job
 exports.getApplicants = async (req, res) => {
   const { jobId } = req.body;
-  const { jobId } = req.body;
 
   // Validate jobId
   if (!jobId) {
