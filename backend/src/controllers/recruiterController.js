@@ -1,5 +1,8 @@
 const prisma = require("../utils/prismaClient");
 const jwt = require("jsonwebtoken");
+const ScoreCandidatesDistributed = require("../ai/filtering/FilterDistributor.js");
+const nodemailer = require("nodemailer");
+require("dotenv").config();
 
 
 // Create a job, with recruiterId fetched from the authenticated user
@@ -118,7 +121,9 @@ exports.getApplicants = async (req, res) => {
     });
 
     if (applicants.length === 0) {
-      return res.status(404).json({ message: "No applicants found for this job." });
+      return res
+        .status(404)
+        .json({ message: "No applicants found for this job." });
     }
 
     const jobInfo = {
@@ -126,7 +131,7 @@ exports.getApplicants = async (req, res) => {
       description: applicants[0].job.description,
     };
 
-    const formattedApplicants = applicants.map(applicant => ({
+    const formattedApplicants = applicants.map((applicant) => ({
       id: applicant.applicant.id,
       name: applicant.applicant.name,
       email: applicant.applicant.email,
@@ -147,49 +152,124 @@ exports.getApplicants = async (req, res) => {
   }
 };
 
+exports.getFilteredApplicants = async (req, res) => {
+  const { jobId } = req.body;
+
+  // Validate jobId
+  if (!jobId) {
+    return res.status(400).json({ message: "Job ID is required." });
+  }
+
+  try {
+    console.log("1")
+    const applicants = await prisma.application.findMany({
+      where: { jobId: parseInt(jobId, 10) }, // Ensure jobId is a number
+      include: {
+        job: { select: { title: true, description: true } }, // Include job title and description
+        applicant: true, // Include associated applicant data
+      },
+    });
+    console.log("1111111111");
+    if (applicants.length === 0) {
+      return res.status(404).json({ message: "No applicants found for this job." });
+    }
+    console.log("1111111111");
+    // Structured the response
+    const jobInfo = {
+      title: applicants[0].job.title,
+      description: applicants[0].job.description,
+    };
+    console.log("1111111111");
+    const formattedApplicants = applicants
+      .filter(
+        (applicant) =>
+          applicant.applicant.resume !==
+          "https://example.com/uploads/resume.pdf"
+      ) // Filter out applicants with the specific resume URL
+      .map((applicant) => ({
+        id: applicant.applicant.id,
+        name: applicant.applicant.name,
+        email: applicant.applicant.email,
+        resume: applicant.applicant.resume,
+        resumeOriginalName: applicant.applicant.resumeOriginalName,
+        bio: applicant.applicant.bio,
+        skills: applicant.applicant.skills,
+        profilePhoto: applicant.applicant.profilePhoto,
+      }));
+    console.log("1111111111");
+    const result = await Promise.all(
+      formattedApplicants.map(async applicant => {
+        const resume_url = applicant.resume;
+        const job_requirement = jobInfo.description;
+        const score = await ScoreCandidatesDistributed(resume_url, job_requirement);
+        //inserting applicant id in the score object
+        score.applicantId = applicant.id;
+        return score;
+      })
+    );
+    console.log("1111111111");
+    if (result) {
+      res.json({
+        job: jobInfo,
+        applicants: formattedApplicants, // Send the job and applicants data
+        result: result,
+      });
+    }
+  } catch (error) {
+    console.error("Error retrieving applicants:", error.message || error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 
-// // Update the applicant's status to "Shortlisted" or any other status
-// exports.updateApplicantStatus = async (req, res) => {
-//   const { applicantId, jobId, status } = req.body; // Destructure the applicantId, jobId, and status from req.body
 
-//   // Validate input
-//   if (!applicantId || !jobId || !status) {
-//     return res.status(400).json({ message: "Applicant ID, Job ID, and status are required." });
-//   }
 
-//   try {
-//     // Check if the application exists
-//     const application = await prisma.application.findUnique({
-//       where: {
-//         applicantId_jobId: {
-//           applicantId: parseInt(applicantId, 10),
-//           jobId: parseInt(jobId, 10),
-//         },
-//       },
-//     });
+//Your messageApplicant function
+exports.messageApplicant = async (req, res) => {
+  const { email, messageContent } = req.body;
 
-//     if (!application) {
-//       return res.status(404).json({ message: "Application not found." });
-//     }
+  if (!email || !messageContent) {
+    return res
+      .status(400)
+      .json({ message: "Email and message content are required." });
+  }
 
-//     // Update the status of the application
-//     const updatedApplication = await prisma.application.update({
-//       where: {
-//         applicantId_jobId: {
-//           applicantId: parseInt(applicantId, 10),
-//           jobId: parseInt(jobId, 10),
-//         },
-//       },
-//       data: { status }, // Update status to new value (e.g., "Shortlisted")
-//     });
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: "Invalid email format." });
+  }
 
-//     res.json({
-//       message: "Application status updated successfully.",
-//       updatedApplication,
-//     });
-//   } catch (error) {
-//     console.error("Error updating applicant status:", error.message || error);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// };
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      logger: true,
+      debug: true,
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Job Application Update",
+      text: messageContent,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+
+    if (info.accepted.length > 0) {
+      res
+        .status(200)
+        .json({ message: "Message sent successfully to the applicant." });
+    } else {
+      res.status(500).json({ message: "Failed to send the message." });
+    }
+  } catch (error) {
+    console.error("Error messaging applicant:", error.message); // Log specific error message
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
+};

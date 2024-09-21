@@ -134,18 +134,20 @@ exports.updateApplicantProfile = async (req, res) => {
         id: applicantId,
       },
       data: {
-        bio: bio || undefined,  // Update bio if provided
-        skills: skills || undefined,  // Update skills array if provided
-        resume: resume || undefined,  // Update resume URL if provided
-        resumeOriginalName: resumeOriginalName || undefined,  // Update original resume filename if provided
-        profilePhoto: profilePhoto || undefined,  // Update profile photo URL if provided
+        bio: bio || undefined, // Update bio if provided
+        skills: skills || undefined, // Update skills array if provided
+        resume: resume || undefined, // Update resume URL if provided
+        resumeOriginalName: resumeOriginalName || undefined, // Update original resume filename if provided
+        profilePhoto: profilePhoto || undefined, // Update profile photo URL if provided
       },
     });
 
-    res.json(updatedApplicant);
+    return res.status(200).json({
+      message: "Profile updated successfully.",
+      success: true,
+    });
   } catch (error) {
-    console.error("Error updating profile:", error.message || error);
-    res.status(500).json({ message: "Internal server error" });
+    console.log(error);
   }
 };
 
@@ -233,5 +235,53 @@ exports.parseResume = async (req, res) => {
   } catch (error) {
     console.error('Error parsing resume:', error);
     res.status(500).json({ error: 'Failed to parse resume' });
+  }
+};
+exports.getApplicants = async (req, res) => {
+  const { jobId } = req.params; // Change here
+
+  // Validate jobId
+  if (!jobId) {
+    return res.status(400).json({ message: "Job ID is required." });
+  }
+
+  try {
+    const applicants = await prisma.application.findMany({
+      where: { jobId: parseInt(jobId, 10) }, // Ensure jobId is a number
+      include: {
+        job: { select: { title: true, description: true } },
+        applicant: true,
+      },
+    });
+
+    if (applicants.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No applicants found for this job." });
+    }
+
+    const jobInfo = {
+      title: applicants[0].job.title,
+      description: applicants[0].job.description,
+    };
+
+    const formattedApplicants = applicants.map((applicant) => ({
+      id: applicant.applicant.id,
+      name: applicant.applicant.name,
+      email: applicant.applicant.email,
+      resume: applicant.applicant.resume,
+      resumeOriginalName: applicant.applicant.resumeOriginalName,
+      bio: applicant.applicant.bio,
+      skills: applicant.applicant.skills,
+      profilePhoto: applicant.applicant.profilePhoto,
+    }));
+
+    res.json({
+      job: jobInfo,
+      applicants: formattedApplicants,
+    });
+  } catch (error) {
+    console.error("Error retrieving applicants:", error.message || error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

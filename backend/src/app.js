@@ -3,6 +3,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const applicantRoutes = require("./routes/applicantRoutes");
 const recruiterRoutes = require("./routes/recruiterRoutes");
+const { setupChatWebSocket } = require("./controllers/chatController");
 
 const {
     authenticateToken,
@@ -12,10 +13,15 @@ const {
 
  const app = express();
  
-app.use(cors({
-  origin: 'http://localhost:5173', // Allow your frontend's origin
-}));
-  
+
+app.use(
+  cors({
+    origin: ["http://localhost:5173"], // The URL should be a string in quotes
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  })
+);
 app.use(express.json());
 
 app.get("/",(req,res)=>{
