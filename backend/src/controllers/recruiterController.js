@@ -215,35 +215,5 @@ exports.getFilteredApplicants = async (req, res) => {
 //       })
 //       .catch((error) => {
          
-//         console.error("Failed to ensure event type:", error);
-//       });
-//   }
-// };
-
-const oauth2Client = new OAuth2(
-  '665488303177-057lra11leog8gnbati275ej7p6afdf4.apps.googleusercontent.com',     // Your OAuth 2.0 client ID
-  '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', // Your OAuth 2.0 client secret
-  'https://localhost:5173/oauth/callback'   // Redirect URI specified in the Google Cloud Console
-);
-
-
-exports.authGoogle = async (req, res) => {
-  const authorizeUrl = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: ['https://www.googleapis.com/auth/calendar'],
-  });
-  res.json(authorizeUrl);
-}
-exports.authGoogleCode = async (req, res) => {
-  const code = req.query.code;
-  const { tokens } = await oauth2Client.getToken(code);
-  oauth2Client.setCredentials(tokens);
-  res.json(tokens);
-}
-exports.scheduleMeeting = async (req, res) => {
-  const code = req.query.code;
-  const { tokens } = await oauth2Client.getToken(code);
-  oauth2Client.setCredentials(tokens);
-  res.json(tokens);
-}
   
+
